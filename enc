@@ -1,0 +1,121 @@
+#!/usr/bin/env python
+import argparse
+import os
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from tqdm import tqdm
+import getpass
+import base64
+
+red='\033[1;31m'
+green='\033[1;32m'
+no_color='\033[0m'
+
+
+def encrypt_file_inplace(file_path, key):
+    try:
+        with open(file_path, 'rb') as f:
+            plaintext = f.read()
+
+        cipher = AES.new(key, AES.MODE_CBC)
+        ciphertext = cipher.encrypt(pad(plaintext, AES.block_size))
+
+        with open(file_path, 'wb') as f:
+            f.write(cipher.iv + ciphertext)
+    except Exception as e:
+        print(f"Error encrypting file {file_path}: {e}")
+
+def decrypt_file_inplace(file_path, key):
+    try:
+        with open(file_path, 'rb') as f:
+            data = f.read()
+            iv = data[:AES.block_size]
+            ciphertext = data[AES.block_size:]
+
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
+
+        with open(file_path, 'wb') as f:
+            f.write(plaintext)
+    except Exception as e:
+        print(f"Error decrypting file {file_path}: {e}")
+
+def process_files_in_folder(folder_path, key, encrypt=True):
+    try:
+        func = encrypt_file_inplace if encrypt else decrypt_file_inplace
+        file_count = sum(len(files) for _, _, files in os.walk(folder_path))
+        progress_bar = tqdm(total=file_count, desc="Processing", unit="file")
+
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                func(file_path, key)
+                progress_bar.update(1)  # Update progress bar
+
+        progress_bar.close()
+    except Exception as e:
+        print(f"Error processing files in folder {folder_path}: {e}")
+
+def main():
+    try:
+        parser = argparse.ArgumentParser(description="Encrypt or decrypt files/folders,  sudo -E enc --encrypt f/F file.txt/folder")
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument("--encrypt", nargs=2, metavar=("f/F", "file/folder"), help="Encrypt a file or folder")
+        group.add_argument("--decrypt", nargs=2, metavar=("f/F", "file/folder"), help="Decrypt an encrypted file or folder")
+        args = parser.parse_args()
+        key_is_set=False
+        while key_is_set == False:
+            key = getpass.getpass(prompt="Enter encryption/decryption key (16 chars): ").encode()
+            if len(key) >= 16:
+                key_is_set = True
+            else:
+                print(f"{red}Key must be at least 16 chars long!{no_color}")
+                key_is_set = False
+        if args.encrypt:
+            method, target = args.encrypt
+            if method not in ["f", "F"]:
+                print("Invalid method. Use f or F.")
+                return
+            if method == "f":
+                if not os.path.isfile(target):
+                    print("File not found.")
+                    return
+                confirm_key = getpass.getpass(prompt="Confirm encryption key: ").encode()
+                if key != confirm_key:
+                    print("Keys do not match. Aborting.")
+                    return
+                encrypt_file_inplace(target, key)
+                print("File", target, "encrypted.")
+            elif method == "F":
+                if not os.path.isdir(target):
+                    print("Folder not found.")
+                    return
+                confirm_key = getpass.getpass(prompt="Confirm encryption key: ").encode()
+                if key != confirm_key:
+                    print("Keys do not match. Aborting.")
+                    return
+                process_files_in_folder(target, key)
+                print("All files in", target, "encrypted.")
+        elif args.decrypt:
+            method, target = args.decrypt
+            if method not in ["f", "F"]:
+                print("Invalid method. Use f or F.")
+                return
+            if method == "f":
+                if not os.path.isfile(target):
+                    print("File not found.")
+                    return
+                decrypt_file_inplace(target, key)
+                print("File", target, "decrypted.")
+            elif method == "F":
+                if not os.path.isdir(target):
+                    print("Folder not found.")
+                    return
+                process_files_in_folder(target, key, encrypt=False)
+                print("All encrypted files in", target, "decrypted.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    main()
+    

@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+import subprocess,time
+modules=[
+    "Crypto",
+    "tqdm",
+]
+
+for i in modules:
+    subprocess.run(["pip3","install",i])
+    time.sleep(1)
+print("All done.")
