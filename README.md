@@ -55,6 +55,14 @@ Decrypt the encrypted file:
 ```bash
 enc --decrypt f secret.txt
 ```
+Encrypt a folder:
+```bash
+enc --encrypt F secret_folder
+```
+Decrypt the encrypted folder:
+```bash
+enc --decrypt F secret_folder
+```
 
 ## Note
 
@@ -63,9 +71,7 @@ Make sure to keep your encryption key secure. Once a file or folder is encrypted
 ## License
 
 This project is licensed under the terms of the GNU General Public License (GPL) version 3. See the LICENSE file for details.
-Contributing
 
-If you would like to contribute to VenX, please open an issue or submit a pull request. Your contributions are highly welcome.
 
 ## Author
 
