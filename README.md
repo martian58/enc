@@ -14,6 +14,8 @@ Clone the repository to your local machine:
 ```bash
 git clone https://github.com/martian58/enc.git
 cd enc 
+chmod +x install_requirements
+chmod +x enc
 ./install_requirements
 ```
 
