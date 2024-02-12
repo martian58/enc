@@ -71,10 +71,3 @@ Make sure to keep your encryption key secure. Once a file or folder is encrypted
 ## License
 
 This project is licensed under the terms of the GNU General Public License (GPL) version 3. See the LICENSE file for details.
-
-
-## Author
-
-    Fuad Alizada
-    Email: fuadelizade6@gmail.com
-    GitHub: martian58
