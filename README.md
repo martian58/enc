@@ -18,6 +18,10 @@ chmod +x install_requirements
 chmod +x enc
 ./install_requirements
 ```
+## For global usage
+```bash
+sudo cp enc /bin
+```
 
 ## Usage
 
