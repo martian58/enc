@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+
+"""
+File Encryption/Decryption Tool using AES (CBC mode)
+
+This script allows in-place encryption or decryption of files or entire folders using a 16-byte key.
+Encryption uses AES in CBC mode with automatic padding.
+
+Usage:
+    sudo -E enc --encrypt f file.txt
+    sudo -E enc --encrypt F folder_path
+    sudo -E enc --decrypt f file.txt
+    sudo -E enc --decrypt F folder_path
+"""
+
 import argparse
 import os
 from Crypto.Cipher import AES
@@ -7,29 +21,47 @@ from tqdm import tqdm
 import getpass
 import base64
 
-red='\033[1;31m'
-green='\033[1;32m'
-no_color='\033[0m'
+# ANSI color codes for terminal output
+red = '\033[1;31m'
+green = '\033[1;32m'
+no_color = '\033[0m'
 
 
 def encrypt_file_inplace(file_path, key):
+    """
+    Encrypts a file in-place using AES-CBC.
+
+    Args:
+        file_path (str): Path to the file to encrypt.
+        key (bytes): 16-byte encryption key.
+    """
     try:
         with open(file_path, 'rb') as f:
             plaintext = f.read()
 
+        # Create AES cipher with random IV
         cipher = AES.new(key, AES.MODE_CBC)
         ciphertext = cipher.encrypt(pad(plaintext, AES.block_size))
 
+        # Prepend IV to ciphertext and overwrite the original file
         with open(file_path, 'wb') as f:
             f.write(cipher.iv + ciphertext)
     except Exception as e:
         print(f"Error encrypting file {file_path}: {e}")
 
+
 def decrypt_file_inplace(file_path, key):
+    """
+    Decrypts a previously encrypted file in-place using AES-CBC.
+
+    Args:
+        file_path (str): Path to the encrypted file.
+        key (bytes): 16-byte decryption key.
+    """
     try:
         with open(file_path, 'rb') as f:
             data = f.read()
-            iv = data[:AES.block_size]
+            iv = data[:AES.block_size]  # Extract IV from the beginning
             ciphertext = data[AES.block_size:]
 
         cipher = AES.new(key, AES.MODE_CBC, iv)
@@ -40,7 +72,16 @@ def decrypt_file_inplace(file_path, key):
     except Exception as e:
         print(f"Error decrypting file {file_path}: {e}")
 
+
 def process_files_in_folder(folder_path, key, encrypt=True):
+    """
+    Recursively encrypts or decrypts all files in a folder.
+
+    Args:
+        folder_path (str): Path to the folder.
+        key (bytes): 16-byte encryption/decryption key.
+        encrypt (bool): True for encryption, False for decryption.
+    """
     try:
         func = encrypt_file_inplace if encrypt else decrypt_file_inplace
         file_count = sum(len(files) for _, _, files in os.walk(folder_path))
@@ -50,32 +91,39 @@ def process_files_in_folder(folder_path, key, encrypt=True):
             for file in files:
                 file_path = os.path.join(root, file)
                 func(file_path, key)
-                progress_bar.update(1)  # Update progress bar
+                progress_bar.update(1)
 
         progress_bar.close()
     except Exception as e:
         print(f"Error processing files in folder {folder_path}: {e}")
 
+
 def main():
+    """
+    Main function that parses CLI arguments and triggers file/folder encryption or decryption.
+    """
     try:
-        parser = argparse.ArgumentParser(description="Encrypt or decrypt files/folders,  sudo -E enc --encrypt f/F file.txt/folder")
+        parser = argparse.ArgumentParser(description="Encrypt or decrypt files/folders.\nUsage: sudo -E enc --encrypt f/F file.txt/folder")
         group = parser.add_mutually_exclusive_group(required=True)
-        group.add_argument("--encrypt", nargs=2, metavar=("f/F", "file/folder"), help="Encrypt a file or folder")
-        group.add_argument("--decrypt", nargs=2, metavar=("f/F", "file/folder"), help="Decrypt an encrypted file or folder")
+        group.add_argument("--encrypt", nargs=2, metavar=("f/F", "file/folder"), help="Encrypt a file (f) or folder (F)")
+        group.add_argument("--decrypt", nargs=2, metavar=("f/F", "file/folder"), help="Decrypt a file (f) or folder (F)")
         args = parser.parse_args()
-        key_is_set=False
-        while key_is_set == False:
+
+        # Prompt for key input
+        key_is_set = False
+        while not key_is_set:
             key = getpass.getpass(prompt="Enter encryption/decryption key (16 chars): ").encode()
             if len(key) >= 16:
                 key_is_set = True
             else:
                 print(f"{red}Key must be at least 16 chars long!{no_color}")
-                key_is_set = False
+
         if args.encrypt:
             method, target = args.encrypt
             if method not in ["f", "F"]:
-                print("Invalid method. Use f or F.")
+                print("Invalid method. Use 'f' for file or 'F' for folder.")
                 return
+
             if method == "f":
                 if not os.path.isfile(target):
                     print("File not found.")
@@ -96,11 +144,13 @@ def main():
                     return
                 process_files_in_folder(target, key)
                 print("All files in", target, "encrypted.")
+
         elif args.decrypt:
             method, target = args.decrypt
             if method not in ["f", "F"]:
-                print("Invalid method. Use f or F.")
+                print("Invalid method. Use 'f' for file or 'F' for folder.")
                 return
+
             if method == "f":
                 if not os.path.isfile(target):
                     print("File not found.")
@@ -116,6 +166,6 @@ def main():
     except Exception as e:
         print(f"An error occurred: {e}")
 
+
 if __name__ == "__main__":
     main()
-    
