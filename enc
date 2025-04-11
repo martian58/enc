@@ -113,10 +113,10 @@ def main():
         key_is_set = False
         while not key_is_set:
             key = getpass.getpass(prompt="Enter encryption/decryption key (16 chars): ").encode()
-            if len(key) >= 16:
+            if len(key) == 16:
                 key_is_set = True
             else:
-                print(f"{red}Key must be at least 16 chars long!{no_color}")
+                print(f"{red}Key must be 16 chars long!{no_color}")
 
         if args.encrypt:
             method, target = args.encrypt
